@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Management with Prometheus & Grafana</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+<style>
+  :root {
+    --prometheus-orange: #E6522C;
+    --grafana-orange: #F46800;
+    --grafana-yellow: #FFB357;
+    --success-green: #73BF69;
+    --alert-red: #F2495C;
+    --text-light: #E0E0E0;
+    --bg-dark: #1a1a2e;
+    --bg-card: rgba(255,255,255,0.05);
+  }
+  .reveal {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  .reveal h1, .reveal h2, .reveal h3 {
+    text-transform: none;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .reveal h1 { font-size: 2em; }
+  .reveal h2 { font-size: 1.4em; color: var(--grafana-yellow); margin-bottom: 0.1em; }
+  .reveal h3 { font-size: 1em; color: var(--grafana-orange); }
+  .reveal p, .reveal li { font-size: 0.7em; line-height: 1.4; color: var(--text-light); }
+  .reveal ul { list-style: none; padding-left: 0; }
+  .reveal ul li::before { content: "▸ "; color: var(--grafana-orange); font-weight: bold; }
+  .reveal .subtitle { font-size: 0.9em; color: var(--grafana-yellow); margin-top: 0.5em; }
+  .reveal .highlight { color: var(--grafana-orange); font-weight: 600; }
+  .reveal .highlight-red { color: var(--alert-red); font-weight: 600; }
+  .reveal .highlight-green { color: var(--success-green); font-weight: 600; }
+
+  /* Title slide */
+  .title-slide h1 { font-size: 2.4em; margin-bottom: 0.1em; }
+  .title-slide .logos { font-size: 3em; margin: 0.5em 0; }
+  .title-slide .date { font-size: 0.6em; color: #888; margin-top: 1em; }
+
+  /* Card grid */
+  .card-grid { display: grid; gap: 0.6em; margin-top: 0.5em; }
+  .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 0.6em 1em;
+    border: 1px solid rgba(255,255,255,0.08);
+    text-align: left;
+  }
+  .card h3 { margin: 0 0 0.3em 0; font-size: 0.8em; }
+  .card p, .card li { font-size: 0.58em; margin: 0.15em 0; line-height: 1.4; }
+
+  /* Stat boxes */
+  .stat-row { display: flex; justify-content: center; gap: 1.5em; margin: 1em 0; }
+  .stat-box {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1em 1.8em;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stat-box .number { font-size: 2.2em; font-weight: 700; color: var(--grafana-orange); }
+  .stat-box .label { font-size: 0.6em; color: #aaa; margin-top: 0.3em; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; justify-content: center; gap: 0.4em; margin: 0.6em 0; flex-wrap: wrap; }
+  .flow-box {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 0.5em 1em;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.65em;
+    text-align: center;
+    min-width: 110px;
+  }
+  .flow-box.alert { border-color: var(--alert-red); }
+  .flow-box.success { border-color: var(--success-green); }
+  .flow-box.orange { border-color: var(--grafana-orange); }
+  .flow-arrow { font-size: 1.4em; color: var(--grafana-orange); }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 0.5em auto; max-width: 700px; }
+  .timeline-item {
+    display: flex; align-items: flex-start; gap: 0.8em; margin-bottom: 0.5em;
+    font-size: 0.62em; text-align: left;
+  }
+  .timeline-dot {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 0.3em;
+  }
+  .dot-red { background: var(--alert-red); }
+  .dot-orange { background: var(--grafana-orange); }
+  .dot-green { background: var(--success-green); }
+
+  /* Comparison table */
+  .compare-table { width: 100%; border-collapse: collapse; margin-top: 0.8em; font-size: 0.65em; }
+  .compare-table th {
+    background: rgba(255,255,255,0.08);
+    padding: 0.6em 1em;
+    text-align: left;
+    color: var(--grafana-yellow);
+    border-bottom: 2px solid var(--grafana-orange);
+  }
+  .compare-table td {
+    padding: 0.5em 1em;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-light);
+  }
+
+  /* Architecture diagram */
+  .arch-diagram { display: flex; flex-direction: column; align-items: center; gap: 0.6em; margin: 0.8em 0; }
+  .arch-row { display: flex; gap: 1em; align-items: center; }
+  .arch-box {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 0.6em 1.4em;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.7em;
+    text-align: center;
+  }
+  .arch-box.prom { border-color: var(--prometheus-orange); }
+  .arch-box.graf { border-color: var(--grafana-orange); }
+  .arch-box.app { border-color: var(--success-green); }
+  .arch-arrow { color: var(--grafana-orange); font-size: 1.2em; }
+
+  /* Agenda */
+  .agenda-list { list-style: none; padding: 0; counter-reset: agenda; }
+  .agenda-list li {
+    counter-increment: agenda;
+    padding: 0.5em 0;
+    font-size: 0.85em;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .agenda-list li::before {
+    content: counter(agenda) ". ";
+    color: var(--grafana-orange);
+    font-weight: 700;
+  }
+
+  /* Code block */
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 0.8em 1em;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.6em;
+    text-align: left;
+    line-height: 1.5;
+    color: #ddd;
+    overflow-x: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .code-block .keyword { color: #569CD6; }
+  .code-block .string { color: #CE9178; }
+  .code-block .comment { color: #6A9955; }
+  .code-block .type { color: #4EC9B0; }
+
+  /* Section divider */
+  .section-divider { border: none; border-top: 2px solid var(--grafana-orange); width: 80px; margin: 0.4em auto; }
+
+  /* Demo instruction */
+  .demo-tag {
+    display: inline-block;
+    background: var(--grafana-orange);
+    color: #000;
+    font-weight: 700;
+    font-size: 0.5em;
+    padding: 0.2em 0.8em;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    margin-left: 0.5em;
+  }
+
+  /* Key takeaway */
+  .takeaway {
+    background: rgba(244, 104, 0, 0.1);
+    border-left: 4px solid var(--grafana-orange);
+    padding: 0.4em 1em;
+    border-radius: 0 8px 8px 0;
+    margin: 0.5em 0;
+    text-align: left;
+  }
+  .takeaway p { font-size: 0.65em; margin: 0; }
+
+  .reveal section { padding: 0.3em; }
+  .reveal .slides section { overflow: hidden; }
+  .fragment.fade-in-then-semi-out.visible:not(.current-fragment) { opacity: 0.4; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ SLIDE 1: Title ============ -->
+<section>
+  <div class="title-slide">
+    <p class="logos">
+      <span style="color: var(--prometheus-orange);">&#9854;</span>
+      <span style="color: #666; font-size: 0.6em;">+</span>
+      <span style="color: var(--grafana-orange);">&#9783;</span>
+    </p>
+    <h1>Incident Detection &<br>Management</h1>
+    <p class="subtitle">with Prometheus & Grafana</p>
+    <p class="date">Live Demo &bull; Hands-On Walkthrough</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 2: The Problem ============ -->
+<section>
+  <h2>The Problem</h2>
+  <hr class="section-divider">
+  <p style="font-size: 0.85em; margin-bottom: 0.8em;">How do teams typically discover production issues?</p>
+  <div class="card-grid cols-3">
+    <div class="card">
+      <h3>Customer Reports</h3>
+      <p>"Your site is down" <br><span class="highlight-red">Hours of lost revenue</span></p>
+    </div>
+    <div class="card">
+      <h3>Manual Checking</h3>
+      <p>Watching logs & dashboards<br><span class="highlight-red">Not scalable</span></p>
+    </div>
+    <div class="card">
+      <h3>Guesswork</h3>
+      <p>"It feels slow today"<br><span class="highlight-red">No data-driven decisions</span></p>
+    </div>
+  </div>
+  <div class="takeaway">
+    <p><strong>Goal:</strong> Detect incidents <span class="highlight">before</span> users notice, and respond with <span class="highlight">data, not guesses</span>.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 3: Agenda ============ -->
+<section>
+  <h2>Agenda</h2>
+  <hr class="section-divider">
+  <ul class="agenda-list">
+    <li>What are Prometheus & Grafana?</li>
+    <li>How metrics-based monitoring works</li>
+    <li>Dashboards &mdash; Visualizing system health</li>
+    <li>Alerting &mdash; Automated incident detection</li>
+    <li>Live Demo &mdash; From error to alert in real time</li>
+    <li>Key Takeaways</li>
+  </ul>
+</section>
+
+<!-- ============ SLIDE 4: What is Prometheus ============ -->
+<section>
+  <h2 style="color: var(--prometheus-orange);">What is Prometheus?</h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2">
+    <div class="card">
+      <h3>Open-Source Monitoring</h3>
+      <ul>
+        <li>Collects numeric metrics from applications</li>
+        <li>Stores time-series data</li>
+        <li>Powerful query language (PromQL)</li>
+        <li>Pull-based: scrapes targets on a schedule</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What It Tracks</h3>
+      <ul>
+        <li><span class="highlight">Counters</span> &mdash; things that only go up<br><em style="font-size:0.85em; color:#999">(total requests, total errors)</em></li>
+        <li><span class="highlight">Gauges</span> &mdash; values that go up & down<br><em style="font-size:0.85em; color:#999">(active users, memory usage)</em></li>
+        <li><span class="highlight">Histograms</span> &mdash; distributions<br><em style="font-size:0.85em; color:#999">(response time percentiles)</em></li>
+      </ul>
+    </div>
+  </div>
+  <div class="takeaway">
+    <p>Think of Prometheus as your application's <span class="highlight">vital signs monitor</span> &mdash; constantly measuring health.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 5: What is Grafana ============ -->
+<section>
+  <h2 style="color: var(--grafana-orange);">What is Grafana?</h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2">
+    <div class="card">
+      <h3>Visualization Platform</h3>
+      <ul>
+        <li>Turns raw metrics into dashboards</li>
+        <li>Charts, gauges, tables, heatmaps</li>
+        <li>Real-time, auto-refreshing views</li>
+        <li>Connects to Prometheus (and 50+ sources)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Alerting Engine</h3>
+      <ul>
+        <li>Define conditions on any metric</li>
+        <li>Automatic notification when thresholds are crossed</li>
+        <li>Routes to Email, Slack, PagerDuty, Teams</li>
+        <li>Alert states: <span class="highlight-green">Normal</span> &rarr; <span class="highlight-red">Firing</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="takeaway">
+    <p>Grafana is your <span class="highlight">control room</span> &mdash; see everything at a glance and get alerted automatically.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 6: How It Works Together ============ -->
+<section>
+  <h2>How It Works Together</h2>
+  <hr class="section-divider">
+  <div class="flow" style="margin-top: 1.5em;">
+    <div class="flow-box app">
+      <strong>Application</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Exposes /metrics</span>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box orange">
+      <strong>Prometheus</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Scrapes every 5s</span>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box orange">
+      <strong>Grafana</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Queries & visualizes</span>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box alert">
+      <strong>Alert!</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Slack / Email / PagerDuty</span>
+    </div>
+  </div>
+  <div class="code-block" style="margin-top: 1.5em; max-width: 600px; margin-left: auto; margin-right: auto;">
+    <span class="comment"># Example: what Prometheus collects</span><br>
+    http_request_duration_seconds_count{<span class="string">code="200"</span>, <span class="string">endpoint="/api/products"</span>} <span class="type">1547</span><br>
+    http_request_duration_seconds_count{<span class="string">code="500"</span>, <span class="string">endpoint="/api/orders"</span>} <span class="type">23</span><br>
+    orders_pending_count <span class="type">7</span><br>
+    products_out_of_stock <span class="type">2</span>
+  </div>
+</section>
+
+<!-- ============ SLIDE 7: Our Demo System ============ -->
+<section>
+  <h2>Our Demo System</h2>
+  <hr class="section-divider">
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box app">
+        <strong>DemoApi</strong><br>
+        <span style="font-size:0.85em; color:#aaa">.NET 9 &bull; REST API<br>Products, Orders, Metrics</span>
+      </div>
+    </div>
+    <div class="arch-arrow">&darr; scrape /metrics</div>
+    <div class="arch-row">
+      <div class="arch-box prom">
+        <strong>Prometheus</strong><br>
+        <span style="font-size:0.85em; color:#aaa">:9090 &bull; every 5s</span>
+      </div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box graf">
+        <strong>Grafana</strong><br>
+        <span style="font-size:0.85em; color:#aaa">:3000 &bull; 3 dashboards</span>
+      </div>
+    </div>
+    <div style="margin-top: 0.5em;"></div>
+    <div class="arch-row">
+      <div class="arch-box" style="border-color: #888;">
+        <strong>Traffic Simulator</strong><br>
+        <span style="font-size:0.85em; color:#aaa">5 traffic patterns</span>
+      </div>
+      <div class="arch-box" style="border-color: var(--alert-red);">
+        <strong>Error Trigger</strong><br>
+        <span style="font-size:0.85em; color:#aaa">Generates 500 errors</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size: 0.65em; color: #888; margin-top: 0.5em;">All services run via <code>docker compose up</code> &mdash; single command setup</p>
+</section>
+
+<!-- ============ SLIDE 8: Metrics We Collect ============ -->
+<section>
+  <h2>Metrics We Collect</h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-3">
+    <div class="card">
+      <h3 style="color: var(--grafana-yellow);">HTTP Metrics</h3>
+      <ul>
+        <li>Request rate per endpoint</li>
+        <li>Response time (p50, p95, p99)</li>
+        <li>Error rate by status code</li>
+        <li>Requests in progress</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color: var(--grafana-yellow);">Business Metrics</h3>
+      <ul>
+        <li>Orders created / processed</li>
+        <li>Order processing duration</li>
+        <li>Pending orders queue</li>
+        <li>Products out of stock</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color: var(--grafana-yellow);">System Metrics</h3>
+      <ul>
+        <li>CPU & memory usage</li>
+        <li>GC collections</li>
+        <li>Thread pool threads</li>
+        <li>Database query duration</li>
+      </ul>
+    </div>
+  </div>
+  <div class="takeaway">
+    <p><strong>15+ metrics</strong> give us full visibility across <span class="highlight">infrastructure</span>, <span class="highlight">application</span>, and <span class="highlight">business</span> layers.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 9: Dashboard - HTTP Overview ============ -->
+<section>
+  <h2>Dashboard: HTTP Overview <span class="demo-tag">Demo</span></h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2" style="font-size: 0.9em;">
+    <div class="card">
+      <h3>Traffic Panels</h3>
+      <ul>
+        <li>Request Rate by Endpoint</li>
+        <li>Error Rate by Endpoint</li>
+        <li>Response Time Percentiles</li>
+        <li>Status Code Distribution</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Error Analysis</h3>
+      <ul>
+        <li>Error Rate (%) with threshold line</li>
+        <li>Requests In Progress (gauge)</li>
+        <li>Top Slowest Endpoints</li>
+        <li>Errors by Endpoint (table)</li>
+      </ul>
+    </div>
+  </div>
+  <p style="font-size: 0.7em; margin-top: 1em;">
+    <span class="highlight">Auto-refreshes every 5 seconds</span> &mdash;
+    <a href="http://localhost:3000/d/http-overview" style="color: var(--grafana-yellow);">localhost:3000/d/http-overview</a>
+  </p>
+</section>
+
+<!-- ============ SLIDE 10: Dashboard - Business & System ============ -->
+<section>
+  <h2>Dashboards: Business & System <span class="demo-tag">Demo</span></h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2" style="font-size: 0.9em;">
+    <div class="card">
+      <h3>Business Metrics</h3>
+      <ul>
+        <li>Order creation rate & outcomes</li>
+        <li>Processing duration (p50, p95)</li>
+        <li>Pending orders queue depth</li>
+        <li>Stock levels & replenishment</li>
+        <li>Order value distribution</li>
+      </ul>
+      <p style="margin-top: 0.5em;"><a href="http://localhost:3000/d/business-metrics" style="color: var(--grafana-yellow); font-size: 0.9em;">localhost:3000/d/business-metrics</a></p>
+    </div>
+    <div class="card">
+      <h3>System & Database</h3>
+      <ul>
+        <li>CPU & memory usage</li>
+        <li>GC collections by generation</li>
+        <li>Thread pool utilization</li>
+        <li>DB query duration (p95)</li>
+        <li>Database error rate</li>
+      </ul>
+      <p style="margin-top: 0.5em;"><a href="http://localhost:3000/d/system-database" style="color: var(--grafana-yellow); font-size: 0.9em;">localhost:3000/d/system-database</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 11: Alerting ============ -->
+<section>
+  <h2>Alerting: Automated Detection</h2>
+  <hr class="section-divider">
+  <p style="font-size: 0.8em;">Grafana evaluates alert rules on a schedule and transitions between states:</p>
+  <div class="flow" style="margin: 1.5em 0;">
+    <div class="flow-box success">
+      <strong style="color: var(--success-green); font-size: 1.1em;">Normal</strong><br>
+      <span style="font-size:0.85em; color:#aaa">All clear &mdash; no issues</span>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box" style="border-color: var(--grafana-yellow);">
+      <strong style="color: var(--grafana-yellow); font-size: 1.1em;">Pending</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Condition met, waiting</span>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box alert">
+      <strong style="color: var(--alert-red); font-size: 1.1em;">Firing</strong><br>
+      <span style="font-size:0.85em; color:#aaa">Alert! Take action</span>
+    </div>
+  </div>
+  <div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h3>Our Alert Rule</h3>
+    <ul>
+      <li><strong>Condition:</strong> Any 5xx errors in the last minute</li>
+      <li><strong>Evaluation:</strong> Every 10 seconds</li>
+      <li><strong>Severity:</strong> <span class="highlight-red">Critical</span></li>
+      <li><strong>Action:</strong> Notify team immediately</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ SLIDE 12: Live Demo - Scenario ============ -->
+<section>
+  <h2>Live Demo: Incident Simulation <span class="demo-tag">Live</span></h2>
+  <hr class="section-divider">
+  <p style="font-size: 0.8em; margin-bottom: 1em;">Let's simulate a real production incident and watch the system detect it.</p>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot dot-green"></div>
+      <div>
+        <strong style="color: var(--success-green);">Step 1: Observe Normal State</strong><br>
+        Dashboards show healthy traffic, alert is <span class="highlight-green">Normal</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot dot-red"></div>
+      <div>
+        <strong style="color: var(--alert-red);">Step 2: Trigger the Incident</strong><br>
+        Run ErrorTrigger &rarr; generates 500 errors every 2 seconds
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot dot-orange"></div>
+      <div>
+        <strong style="color: var(--grafana-orange);">Step 3: Watch Detection</strong><br>
+        Error Rate spikes, Status Code shows 500s, alert goes <span class="highlight-red">Firing</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot dot-green"></div>
+      <div>
+        <strong style="color: var(--success-green);">Step 4: Resolve</strong><br>
+        Stop ErrorTrigger &rarr; errors stop &rarr; alert returns to <span class="highlight-green">Normal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 13: What to Show in Demo ============ -->
+<section>
+  <h2>Demo Walkthrough <span class="demo-tag">Live</span></h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2" style="font-size: 0.9em;">
+    <div class="card">
+      <h3>1. Before the Incident</h3>
+      <ul>
+        <li>Show HTTP Overview dashboard</li>
+        <li>Point out normal request rates</li>
+        <li>Show alert state: <span class="highlight-green">Normal</span></li>
+        <li>Open <code>localhost:3000/alerting</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>2. Trigger the Incident</h3>
+      <ul>
+        <li>Run: <code style="color: var(--grafana-yellow);">dotnet run --project src/ErrorTrigger</code></li>
+        <li>Watch console: 500 responses</li>
+        <li>Switch to Grafana</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>3. Observe Detection</h3>
+      <ul>
+        <li>Error Rate by Endpoint spikes</li>
+        <li>Status Code pie shows 500 slice</li>
+        <li>Errors by Endpoint table fills</li>
+        <li>Alert: <span class="highlight-green">Normal</span> &rarr; <span class="highlight-red">Firing</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>4. Resolution</h3>
+      <ul>
+        <li>Stop ErrorTrigger (Ctrl+C)</li>
+        <li>Wait ~1 minute</li>
+        <li>Error rate drops to zero</li>
+        <li>Alert: <span class="highlight-red">Firing</span> &rarr; <span class="highlight-green">Normal</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 14: Without vs With Monitoring ============ -->
+<section>
+  <h2>Without vs. With Monitoring</h2>
+  <hr class="section-divider">
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th style="color: var(--alert-red);">Without Monitoring</th>
+        <th style="color: var(--success-green);">With Prometheus & Grafana</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Detection</strong></td>
+        <td>Customer complaint (hours later)</td>
+        <td>Automatic alert (seconds)</td>
+      </tr>
+      <tr>
+        <td><strong>Diagnosis</strong></td>
+        <td>Read through log files manually</td>
+        <td>Dashboards show exactly what & where</td>
+      </tr>
+      <tr>
+        <td><strong>Impact</strong></td>
+        <td>Unknown until post-mortem</td>
+        <td>Real-time error counts & affected endpoints</td>
+      </tr>
+      <tr>
+        <td><strong>Resolution</strong></td>
+        <td>"Is it fixed?" &mdash; check manually</td>
+        <td>Alert returns to Normal automatically</td>
+      </tr>
+      <tr>
+        <td><strong>Prevention</strong></td>
+        <td>Hope it doesn't happen again</td>
+        <td>Trend analysis, capacity planning</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ SLIDE 15: Real-World Use Cases ============ -->
+<section>
+  <h2>Real-World Use Cases</h2>
+  <hr class="section-divider">
+  <div class="card-grid cols-2" style="font-size: 0.9em;">
+    <div class="card">
+      <h3>Incident Detection</h3>
+      <ul>
+        <li>Error rate spikes (5xx alerts)</li>
+        <li>Response time degradation</li>
+        <li>Service health check failures</li>
+        <li>Unusual traffic patterns</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Business Monitoring</h3>
+      <ul>
+        <li>Order pipeline bottlenecks</li>
+        <li>Inventory / stock depletion</li>
+        <li>Revenue-impacting failures</li>
+        <li>SLA compliance tracking</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Capacity Planning</h3>
+      <ul>
+        <li>CPU / memory trend analysis</li>
+        <li>Database query performance</li>
+        <li>Traffic growth forecasting</li>
+        <li>Resource utilization</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Notification Channels</h3>
+      <ul>
+        <li>Slack / Microsoft Teams</li>
+        <li>Email</li>
+        <li>PagerDuty / OpsGenie</li>
+        <li>Webhooks (custom integrations)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 16: Key Takeaways ============ -->
+<section>
+  <h2>Key Takeaways</h2>
+  <hr class="section-divider">
+  <div style="max-width: 650px; margin: 0 auto; text-align: left;">
+    <div class="takeaway" style="margin-bottom: 0.4em;">
+      <p><span class="highlight">1.</span> &nbsp;<strong>Metrics beat logs for real-time monitoring</strong> &mdash; <span style="color:#aaa;">structured numbers are faster to query than text logs.</span></p>
+    </div>
+    <div class="takeaway" style="margin-bottom: 0.4em;">
+      <p><span class="highlight">2.</span> &nbsp;<strong>Automate detection, don't rely on humans</strong> &mdash; <span style="color:#aaa;">alert rules catch issues in seconds, not hours.</span></p>
+    </div>
+    <div class="takeaway" style="margin-bottom: 0.4em;">
+      <p><span class="highlight">3.</span> &nbsp;<strong>Monitor at every layer</strong> &mdash; <span style="color:#aaa;">HTTP + Business + System metrics give complete visibility.</span></p>
+    </div>
+    <div class="takeaway">
+      <p><span class="highlight">4.</span> &nbsp;<strong>Easy to get started</strong> &mdash; <span style="color:#aaa;">open-source, one-command Docker setup, production-ready.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 17: Q&A ============ -->
+<section>
+  <div style="margin-top: 2em;">
+    <h1>Q&A</h1>
+    <hr class="section-divider">
+    <p style="font-size: 0.9em; color: var(--grafana-yellow); margin-top: 1em;">Questions?</p>
+    <div class="stat-row" style="margin-top: 2em;">
+      <div class="stat-box">
+        <div class="label" style="font-size: 0.8em;">Grafana</div>
+        <div style="font-size: 0.7em; color: #aaa; margin-top: 0.3em;">localhost:3000</div>
+      </div>
+      <div class="stat-box">
+        <div class="label" style="font-size: 0.8em;">Prometheus</div>
+        <div style="font-size: 0.7em; color: #aaa; margin-top: 0.3em;">localhost:9090</div>
+      </div>
+      <div class="stat-box">
+        <div class="label" style="font-size: 0.8em;">API</div>
+        <div style="font-size: 0.7em; color: #aaa; margin-top: 0.3em;">localhost:5000</div>
+      </div>
+    </div>
+    <p style="font-size: 0.55em; color: #666; margin-top: 2em;">Thank you!</p>
+  </div>
+</section>
+
+</div><!-- slides -->
+</div><!-- reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    controls: true,
+    progress: true,
+    center: true,
+    width: 1280,
+    height: 800
+  });
+</script>
+</body>
+</html>
