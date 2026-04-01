@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApi", "src\DemoApi\Demo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficSimulator", "src\TrafficSimulator\TrafficSimulator.csproj", "{55BFB483-B9C7-4C40-9E58-1BF34BA7AA8B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErrorTrigger", "src\ErrorTrigger\ErrorTrigger.csproj", "{6650174C-EF1B-4B20-AF91-63CB59FE9080}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{55BFB483-B9C7-4C40-9E58-1BF34BA7AA8B}.Release|x64.Build.0 = Release|Any CPU
 		{55BFB483-B9C7-4C40-9E58-1BF34BA7AA8B}.Release|x86.ActiveCfg = Release|Any CPU
 		{55BFB483-B9C7-4C40-9E58-1BF34BA7AA8B}.Release|x86.Build.0 = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|x64.Build.0 = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Debug|x86.Build.0 = Debug|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|x64.ActiveCfg = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|x64.Build.0 = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|x86.ActiveCfg = Release|Any CPU
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +64,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{86E0C221-468B-44D5-8287-DD08E9AB08C6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{55BFB483-B9C7-4C40-9E58-1BF34BA7AA8B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{6650174C-EF1B-4B20-AF91-63CB59FE9080} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

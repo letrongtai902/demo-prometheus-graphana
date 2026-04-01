@@ -25,8 +25,31 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpMetrics();
 
+// Catch unhandled exceptions and set the status code to 500
+// so prometheus-net records the correct code (not 200).
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (Exception)
+    {
+        if (!context.Response.HasStarted)
+        {
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsync("Internal Server Error");
+        }
+    }
+});
+
 app.MapProductEndpoints();
 app.MapOrderEndpoints();
+app.MapGet("/api/simulate-error", () =>
+{
+    throw new InvalidOperationException("Simulated server error for alerting demo");
+});
+
 app.MapHealthChecks("/health");
 app.MapMetrics();
 
