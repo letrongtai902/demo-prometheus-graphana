@@ -70,7 +70,7 @@
       "id": 3,
       "type": "timeseries",
       "title": "Error Rate (%)",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -97,12 +97,12 @@
       "id": 4,
       "type": "gauge",
       "title": "Requests In Progress",
-      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 8 },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "http_requests_in_progress{job=\"demoapi\"}",
-          "legendFormat": "In Progress",
+          "legendFormat": "{{method}} {{endpoint}}",
           "refId": "A"
         }
       ],
@@ -122,6 +122,7 @@
       "type": "piechart",
       "title": "Status Code Distribution",
       "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
