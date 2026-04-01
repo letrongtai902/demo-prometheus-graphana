@@ -166,6 +166,80 @@
         "orientation": "horizontal",
         "xTickLabelRotation": 0
       }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Errors by Endpoint",
+      "description": "Shows which endpoints are returning error responses (4xx/5xx), broken down by HTTP method, endpoint, and status code.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sort_desc(sum(increase(http_request_duration_seconds_count{job=\"demoapi\",code=~\"[45]..\"}[5m])) by (method, endpoint, code))",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "method" },
+            "properties": [
+              { "id": "displayName", "value": "Method" },
+              { "id": "custom.width", "value": 80 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "endpoint" },
+            "properties": [
+              { "id": "displayName", "value": "Endpoint" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "code" },
+            "properties": [
+              { "id": "displayName", "value": "Status Code" },
+              { "id": "custom.width", "value": 110 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "displayName", "value": "Count (5m)" },
+              { "id": "custom.width", "value": 110 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Count (5m)", "desc": true }],
+        "footer": { "show": true, "reducer": ["sum"], "fields": ["Value"] }
+      },
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "type": "include",
+            "filters": [
+              {
+                "fieldName": "Value",
+                "config": { "id": "greater", "options": { "value": 0 } }
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
   "refresh": "5s",
